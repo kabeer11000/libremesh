@@ -1,23 +1,22 @@
 <?php
 // config.php
-
 // !!! IMPORTANT: Replace with a unique, random string for YOUR network !!!
 // This acts as a shared secret for node-to-node communication authentication.
 define('NETWORK_SECRET', 'YOUR_VERY_LONG_AND_RANDOM_SHARED_SECRET_HERE');
 
 // !!! IMPORTANT: Replace with a unique ID for THIS SPECIFIC NODE !!!
 // This helps identify this node in the network. Could be a UUID or hostname.
-define('NODE_ID', 'node_' . gethostname() . '_' . uniqid()); // Simple example ID
+define('NODE_ID', 'node_freeweb10-2.byetcluster.com_682976f6a7a2c'); // Simple example ID
 
 // !!! IMPORTANT: Replace with the accessible URL for THIS NODE's root directory !!!
 // Other nodes will use this URL to communicate with this node.
-define('NODE_URL', 'http://libremesh-cluster0-root.kabeersnetwork.rf.gd/storage_node/'); // Example URL
+define('NODE_URL', 'https://libremesh-mesh0-root.infy.uk'); // Example URL
 
 // !!! IMPORTANT: Initial list of known nodes in the network !!!
 // New nodes use this list to discover the rest of the network via gossip.
 // Include your own NODE_URL here once deployed. Add other nodes' URLs as they join.
 define('SEED_NODES', [
-    'http://libremesh-cluster0-root.kabeersnetwork.rf.gd/storage_node/',
+    'https://libremesh-mesh0-root.infy.uk/',
     // Add URLs of other nodes here
 ]);
 
@@ -58,13 +57,15 @@ define('CHUNK_SIZE', 1024 * 1024 * 5); // File chunk size in bytes (5MB example)
 define('DELETE_PROPAGATION_DELAY_HOURS', 48); // How long to wait after a file is marked deleted before physical deletion.
 
 // --- Error Reporting ---
-// ini_set('display_errors', 0); // Turn off display errors in production
-// ini_set('log_errors', 1); // Log errors in production
-// error_reporting(E_ALL); // Report all errors
+ini_set('error_log', __DIR__ . '/php_error.log');
+ini_set('display_errors', 1); // Turn off display errors in production
+ini_set('log_errors', 1); // Log errors in production
+error_reporting(E_ALL); // Report all errors
+error_log("This is a runtime error log test.");
 
 // Check/Create necessary directories
-if (!is_dir(DATA_PATH)) mkdir(DATA_PATH, 0775, true);
-if (!is_dir(ARCHIVE_PATH)) mkdir(ARCHIVE_PATH, 0775, true);
+if (!is_dir(DATA_PATH)) mkdir(DATA_PATH, 777, true);
+if (!is_dir(ARCHIVE_PATH)) mkdir(ARCHIVE_PATH, 777, true);
 
 // Initialize state files if they don't exist
 if (!file_exists(PEERS_FILE)) file_put_contents(PEERS_FILE, json_encode(SEED_NODES));
