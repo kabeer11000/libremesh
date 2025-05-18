@@ -10,7 +10,7 @@ define('NODE_ID', 'node_freeweb10-2.byetcluster.com_682976f6a7a2c'); // Simple e
 
 // !!! IMPORTANT: Replace with the accessible URL for THIS NODE's root directory !!!
 // Other nodes will use this URL to communicate with this node.
-define('NODE_URL', 'https://libremesh-mesh0-root.infy.uk'); // Example URL
+define('NODE_URL', 'https://libremesh-mesh0-root.infy.uk/'); // Example URL
 
 // !!! IMPORTANT: Initial list of known nodes in the network !!!
 // New nodes use this list to discover the rest of the network via gossip.

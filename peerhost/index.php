@@ -13,7 +13,7 @@ $peers = $node->getPeers();
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Decentralized Storage Node (<?= get_config('NODE_ID') ?>)</title>
+    <title>LibreMesh: Node (<?= get_config('NODE_ID') ?>)</title>
     <style>
         body { font-family: sans-serif; line-height: 1.6; margin: 20px; }
         h2 { margin-top: 30px; }
@@ -28,7 +28,7 @@ $peers = $node->getPeers();
     </style>
 </head>
 <body>
-    <h1>Decentralized Storage Node</h1>
+    <h1>LibreMesh Node</h1>
     <p>Node ID: <code><?= get_config('NODE_ID') ?></code></p>
     <p>Node URL: <code><?= get_config('NODE_URL') ?></code></p>
     <p>Network Secret (first 8 chars): <code><?= substr(get_config('NETWORK_SECRET'), 0, 8) ?>...</code></p>
