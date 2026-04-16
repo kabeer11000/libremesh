@@ -1,0 +1,78 @@
+services:
+  node1:
+    image: libremesh/peerhost:latest
+    container_name: libremesh-node1
+    ports:
+      - "8001:80"
+    environment:
+      - NODE_ID=node1
+      - NODE_URL=http://node1.libremesh.local:8001
+      - NETWORK_SECRET=test-secret
+      - SEED_NODES=["http://node2.libremesh.local:8002"]
+    extra_hosts:
+      - "node1.libremesh.local:127.0.0.1"
+      - "node2.libremesh.local:127.0.0.1"
+    volumes:
+      - node1_data:/var/www/localhost/htdocs/libremesh/data
+    networks:
+      libremesh:
+        aliases:
+          - node1.libremesh.local
+
+  node2:
+    image: libremesh/peerhost:latest
+    container_name: libremesh-node2
+    ports:
+      - "8002:80"
+    environment:
+      - NODE_ID=node2
+      - NODE_URL=http://node2.libremesh.local:8002
+      - NETWORK_SECRET=test-secret
+      - SEED_NODES=["http://node1.libremesh.local:8001"]
+    extra_hosts:
+      - "node1.libremesh.local:127.0.0.1"
+      - "node2.libremesh.local:127.0.0.1"
+    volumes:
+      - node2_data:/var/www/localhost/htdocs/libremesh/data
+    networks:
+      libremesh:
+        aliases:
+          - node2.libremesh.local
+
+  gateway:
+    image: libremesh/gateway:latest
+    container_name: libremesh-gateway
+    ports:
+      - "8080:80"
+    environment:
+      - GATEWAY_SEED_NODES=["http://node1.libremesh.local:8001","http://node2.libremesh.local:8002"]
+      - GATEWAY_NETWORK_SECRET=test-secret
+    extra_hosts:
+      - "node1.libremesh.local:127.0.0.1"
+      - "node2.libremesh.local:127.0.0.1"
+    volumes:
+      - gateway_data:/var/www/localhost/htdocs/data
+    networks:
+      - libremesh
+    depends_on:
+      - node1
+      - node2
+
+  meshdrop:
+    image: libremesh/meshdrop:latest
+    container_name: libremesh-meshdrop
+    ports:
+      - "8003:80"
+    networks:
+      - libremesh
+    depends_on:
+      - node1
+
+networks:
+  libremesh:
+    driver: bridge
+
+volumes:
+  node1_data:
+  node2_data:
+  gateway_data:
