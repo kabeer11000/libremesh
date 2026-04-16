@@ -1,0 +1,39 @@
+# Pre-commit hooks for LibreMesh PHP project
+# See https://pre-commit.com for usage
+
+repos:
+  # General hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+  # PHP syntax checker (no external deps needed)
+  - repo: local
+    hooks:
+      - id: php-syntax
+        name: PHP Syntax Check
+        entry: php -l
+        language: system
+        types: [php]
+        pass_filenames: true
+
+  # PHP-CS-Fixer for code style (if available)
+  - repo: https://github.com/PHP-CS-Fixer/PHP-CS-Fixer
+    rev: v3.60.0
+    hooks:
+      - id: php-cs-fixer
+        args: [--config=.php-cs-fixer.php,--dry-run,--diff]
+        name: PHP-CS-Fixer (dry-run)
+
+  # PHPStan for static analysis (if available)
+  - repo: https://github.com/phpstan/pre-commit-phpstan
+    rev: 1.0.0
+    hooks:
+      - id: phpstan
+        name: PHPStan Static Analysis

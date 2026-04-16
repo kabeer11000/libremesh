@@ -1,0 +1,37 @@
+#!/bin/bash
+# Commit message hook - validates conventional commits format
+#
+# Format: <type>(<scope>): <description>
+#
+# Types: feat, fix, docs, style, refactor, test, chore
+# Scope: optional, e.g., api, cron, gateway, meshdrop, lib
+#
+# Examples:
+#   feat(api): add delete endpoint
+#   fix(cron): correct typo in filename
+#   docs: update README
+
+COMMIT_MSG_FILE="$1"
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+# Skip if merge commit or empty message
+if [ -z "$COMMIT_MSG" ] || echo "$COMMIT_MSG" | grep -q "^Merge"; then
+    exit 0
+fi
+
+# Conventional commit pattern
+PATTERN="^(feat|fix|docs|style|refactor|test|chore)(\([^)]*\))?: .{1,50}"
+
+if ! echo "$COMMIT_MSG" | grep -qE "$PATTERN"; then
+    echo "❌ Invalid commit message format."
+    echo ""
+    echo "Expected: <type>(<scope>): <description>"
+    echo "Types: feat, fix, docs, style, refactor, test, chore"
+    echo "Example: feat(api): add delete endpoint"
+    echo ""
+    echo "Your commit:"
+    echo "$COMMIT_MSG"
+    exit 1
+fi
+
+exit 0
