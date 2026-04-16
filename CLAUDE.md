@@ -274,6 +274,12 @@ It maintains `data/gateway_peers_status.json` and uses its own `GATEWAY_NETWORK_
 
 ---
 
+## Commit Hygiene
+
+When a commit resolves or fixes a GitHub issue, the commit message MUST include the issue reference (e.g., `fix: resolve memory leak in peer discovery (#1)` or `closes #1`). This allows GitHub to auto-close the issue when the commit is merged.
+
+---
+
 ## Core Principles
 
 - **Simplicity first**: Every change as simple as possible. Minimal code impact.
@@ -292,6 +298,38 @@ It maintains `data/gateway_peers_status.json` and uses its own `GATEWAY_NETWORK_
 - Give opinionated recommendations with reasoning.
 - After major sections of work, pause and ask for feedback before moving on.
 - Verify before marking done — ask "would a senior engineer approve this?"
+
+---
+
+## Autonomous Releases
+
+When user says "/ship" or "ship it":
+1. Run `git log --oneline <last-tag>..HEAD` to get commits since last release
+2. Determine bump type: `fix:` → patch, `feat:` → minor, `BREAKING CHANGE:` → major
+3. Calculate next version (e.g., `0.1.0-alpha.1` → `0.1.0-alpha.2` for patch)
+4. Update `CHANGELOG.md` with new version section at top, categorize commits
+5. Update `VERSION` file with new version
+6. Commit: `git add CHANGELOG.md VERSION && git commit -m "release: v{version}"`
+7. Create and push tag: `git tag v{version} && git push && git push --tags`
+8. GitHub Actions release workflow triggers automatically → builds Docker images + creates release
+
+Version bumping rules:
+- `fix:` commits since last tag → patch bump
+- `feat:` commits since last tag → minor bump
+- `BREAKING CHANGE:` in any commit → major bump
+- Alpha versions keep `-alpha` suffix (e.g., `0.1.0-alpha.1` → `0.1.0-alpha.2`)
+
+---
+
+## Docker Cleanup
+
+After successful testing or commits involving Docker:
+1. Stop running containers: `docker compose down`
+2. Remove stopped containers, networks, and dangling images: `docker system prune -f`
+3. Remove build cache: `docker builder prune -f`
+4. Remove any dangling volumes: `docker volume prune -f`
+
+Do NOT leave Docker containers or images hanging after tests or builds complete.
 
 ---
 
