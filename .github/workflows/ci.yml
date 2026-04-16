@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    name: PHP Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammath/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: curl, zip, mbstring, xml
+
+      - name: Lint PHP files
+        run: |
+          find . -name "*.php" -not -path "./vendor/*" -exec php -l {} \;
+
+  test:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker images
+        run: docker compose build
+
+      - name: Run upload test
+        run: chmod +x tests/test_upload.sh && tests/test_upload.sh
+
+      - name: Run cron test
+        run: chmod +x tests/test_cron.sh && tests/test_cron.sh
