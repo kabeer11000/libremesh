@@ -417,7 +417,7 @@ class Node {
 
         if (empty($knownPeers)) {
              error_log("No known peers, starting with seeds.");
-             $knownPeers = get_config('SEED_NODERS'); // Start with seed nodes if peer list is empty
+             $knownPeers = get_config('SEED_NODES'); // Start with seed nodes if peer list is empty
         }
 
 

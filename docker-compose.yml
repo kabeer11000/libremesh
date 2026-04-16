@@ -1,5 +1,8 @@
 services:
   node1:
+    build:
+      context: .
+      dockerfile: peerhost/Dockerfile
     image: libremesh/peerhost:latest
     container_name: libremesh-node1
     ports:
@@ -20,6 +23,9 @@ services:
           - node1.libremesh.local
 
   node2:
+    build:
+      context: .
+      dockerfile: peerhost/Dockerfile
     image: libremesh/peerhost:latest
     container_name: libremesh-node2
     ports:
@@ -40,6 +46,9 @@ services:
           - node2.libremesh.local
 
   gateway:
+    build:
+      context: .
+      dockerfile: gateway/Dockerfile
     image: libremesh/gateway:latest
     container_name: libremesh-gateway
     ports:
@@ -59,6 +68,9 @@ services:
       - node2
 
   meshdrop:
+    build:
+      context: .
+      dockerfile: meshdrop/Dockerfile
     image: libremesh/meshdrop:latest
     container_name: libremesh-meshdrop
     ports:

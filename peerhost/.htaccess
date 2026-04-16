@@ -1,17 +1,12 @@
-# .htaccess
-<IfModule authz_core_module>
-    Require all denied
-</IfModule>
-<IfModule !authz_core_module>
-    Deny from all
+# LibreMesh Access Control - Allow all for PHP files
+
+# Apache 2.4 - use mod_authz_core
+<IfModule mod_authz_core.c>
+    # Deny nothing - allow all PHP files
+    Require all granted
 </IfModule>
 
-# Allow access to the API and index files
-<FilesMatch "^(index|api/.*)\.php$">
-    <IfModule authz_core_module>
-        Require all granted
-    </IfModule>
-    <IfModule !authz_core_module>
-        Allow from all
-    </IfModule>
-</FilesMatch>
+# Apache 2.2 - fallback
+<IfModule !mod_authz_core.c>
+    Allow from all
+</IfModule>
