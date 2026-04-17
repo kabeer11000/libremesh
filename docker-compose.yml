@@ -54,11 +54,8 @@ services:
     ports:
       - "8080:80"
     environment:
-      - GATEWAY_SEED_NODES=["http://node1.libremesh.local:8001","http://node2.libremesh.local:8002"]
+      - GATEWAY_SEED_NODES=["http://node1.libremesh.local:80","http://node2.libremesh.local:80"]
       - GATEWAY_NETWORK_SECRET=test-secret
-    extra_hosts:
-      - "node1.libremesh.local:127.0.0.1"
-      - "node2.libremesh.local:127.0.0.1"
     volumes:
       - gateway_data:/var/www/localhost/htdocs/data
     networks:
