@@ -243,29 +243,44 @@ class Node {
          error_log("Replicating file $fileId to " . count($peersToReplicate) . " peers.");
 
          $replicationStatus = [];
+         $maxRetries = 3;
+         $baseDelay = 1;
+
          foreach ($peersToReplicate as $peerUrl) {
-             // Send the original uploaded file content to the peer
-             // Using CURLFile is the modern way for multipart uploads
-             $cfile = new CURLFile($this->storage->buildDataPath($fileId, $chunkId), mime_content_type($this->storage->buildDataPath($fileId, $chunkId)), basename($this->storage->buildDataPath($fileId, $chunkId)));
+             $attempt = 0;
+             $success = false;
 
-             $postData = [
-                 'file_data' => $cfile, // The file itself
-                 'file_id' => $fileId,
-                 'chunk_id' => $chunkId,
-                 'checksum' => $checksum,
-                 'source_node_id' => get_config('NODE_ID'),
-                 // Add API_KEY_NAME header via curl_setopt
-             ];
+             while ($attempt < $maxRetries && !$success) {
+                 if ($attempt > 0) {
+                     $delay = $baseDelay * pow(2, $attempt - 1);
+                     error_log("Retry $attempt for $fileId to $peerUrl after {$delay}s");
+                     sleep($delay);
+                 }
 
-             $response = Util::requestPeer($peerUrl . 'api/upload_chunk.php', 'POST', $postData);
+                 // Send the original uploaded file content to the peer
+                 $cfile = new CURLFile($this->storage->buildDataPath($fileId, $chunkId), mime_content_type($this->storage->buildDataPath($fileId, $chunkId)), basename($this->storage->buildDataPath($fileId, $chunkId)));
 
-             if ($response !== false && isset($response['success']) && $response['success']) {
-                 $replicationStatus[$peerUrl] = 'success';
-                 error_log("Replication of $fileId to $peerUrl successful.");
-             } else {
-                 $replicationStatus[$peerUrl] = 'failed';
-                 error_log("Replication of $fileId to $peerUrl failed. Response: " . print_r($response, true));
-                 // TODO: Mark this replication as needed in analytics or metadata for healing later
+                 $postData = [
+                     'file_data' => $cfile,
+                     'file_id' => $fileId,
+                     'chunk_id' => $chunkId,
+                     'checksum' => $checksum,
+                     'source_node_id' => get_config('NODE_ID'),
+                 ];
+
+                 $response = Util::requestPeer($peerUrl . 'api/upload_chunk.php', 'POST', $postData);
+
+                 if ($response !== false && isset($response['success']) && $response['success']) {
+                     $success = true;
+                     $replicationStatus[$peerUrl] = 'success';
+                     error_log("Replication of $fileId to $peerUrl successful.");
+                 } else {
+                     $attempt++;
+                     if ($attempt >= $maxRetries) {
+                         $replicationStatus[$peerUrl] = 'failed';
+                         error_log("Replication of $fileId to $peerUrl failed after $maxRetries attempts. Response: " . print_r($response, true));
+                     }
+                 }
              }
          }
 
