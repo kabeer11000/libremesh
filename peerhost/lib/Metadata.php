@@ -81,11 +81,12 @@ class Metadata {
 
         if (isset($this->metadata[$fileId])) {
             $deleteTime = time();
-            foreach ($this->metadata[$fileId]['chunks'] ?? [] as $chunkId => &$chunkData) {
+            $chunks = &$this->metadata[$fileId]['chunks'];
+            foreach ($chunks as $chunkId => &$chunkData) {
                 $chunkData['state'] = 'deleted';
                 $chunkData['deleted_at'] = $deleteTime;
             }
-             unset($chunkData); // Unset reference
+            unset($chunkData);
 
             $success = $this->save();
              if (!$success) error_log("Failed to save metadata after marking $fileId deleted.");
