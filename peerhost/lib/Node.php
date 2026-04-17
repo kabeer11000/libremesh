@@ -62,6 +62,10 @@ class Node {
          return $this->metadata->markFileDeleted($fileId);
      }
 
+     public function mergeIncomingMetadata(array $incomingMetadata) {
+         return $this->metadata->mergeIncomingMetadata($incomingMetadata);
+     }
+
     public function getAnalytics() {
         return $this->analytics->getAll();
     }

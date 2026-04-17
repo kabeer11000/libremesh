@@ -37,22 +37,17 @@ if (!empty($fileIds)) {
 }
 
 
-// TODO: Implement POST handling to receive metadata updates from peers during gossip
-/*
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-     // Receive metadata updates from a peer
-     $incomingMetadata = json_decode(file_get_contents('php://input'), true);
-     if (is_array($incomingMetadata)) {
-          // Call a method in Node/Metadata to merge incoming metadata
-          // $node->mergeIncomingMetadata($incomingMetadata); // Needs implementation
-          echo json_encode(['success' => true, 'message' => 'Metadata received (merge logic omitted).']);
-     } else {
-          http_response_code(400);
-          echo json_encode(['error' => 'Invalid metadata format received.']);
-     }
-     exit;
+    $incomingMetadata = json_decode(file_get_contents('php://input'), true);
+    if (is_array($incomingMetadata)) {
+        $updatedCount = $node->mergeIncomingMetadata($incomingMetadata);
+        echo json_encode(['success' => true, 'message' => 'Metadata received.', 'updated_count' => $updatedCount]);
+    } else {
+        http_response_code(400);
+        echo json_encode(['error' => 'Invalid metadata format received.']);
+    }
+    exit;
 }
-*/
 
 
 http_response_code(200); // OK
