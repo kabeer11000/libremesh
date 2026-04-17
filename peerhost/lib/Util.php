@@ -33,26 +33,18 @@ class Util {
         if ($method === 'POST') {
             curl_setopt($ch, CURLOPT_POST, true);
             if (is_array($data)) {
-                 // Check for file uploads specifically
                  $is_multipart = false;
                  foreach ($data as $key => $value) {
-                     if (is_string($value) && strpos($value, '@') === 0 && file_exists(substr($value, 1))) {
-                         // Using deprecated '@' syntax, might need CurlFile for modern PHP/cURL
-                         error_log("Warning: Using deprecated '@' syntax for cURL file upload. Consider CurlFile.");
-                         $is_multipart = true; // Using @ implies multipart/form-data
-                     } elseif ($value instanceof CURLFile) {
+                     if ($value instanceof CURLFile) {
                          $is_multipart = true;
                          break;
                      }
                  }
 
                  if ($is_multipart) {
-                      // Let cURL set Content-Type for multipart
                       curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
                  } else {
-                      // Assume JSON or form-urlencoded
-                      curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data)); // Default to form-urlencoded
-                      // If sending JSON: curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data)); curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json', get_config('API_KEY_NAME') . ': ' . get_config('NETWORK_SECRET')]);
+                      curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
                  }
 
             } else {
