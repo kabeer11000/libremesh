@@ -20,6 +20,7 @@ class Analytics {
         $this->analytics['download_counts'] = $this->analytics['download_counts'] ?? [];
         $this->analytics['peer_status'] = $this->analytics['peer_status'] ?? [];
         $this->analytics['storage_usage'] = $this->analytics['storage_usage'] ?? [];
+        $this->analytics['last_check_in'] = $this->analytics['last_check_in'] ?? null;
     }
 
     private function save() {
