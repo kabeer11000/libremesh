@@ -58,17 +58,12 @@ class Metadata {
         // Merge the provided data into the existing metadata for this chunk
         $this->metadata[$fileId]['chunks'][$chunkId] = array_merge($this->metadata[$fileId]['chunks'][$chunkId], $data);
 
-         // --- Simplified Conflict Resolution ---
-         // If merging metadata during gossip, more complex logic is needed here
-         // to handle cases where two nodes have conflicting states or timestamps.
-         // Example: If receiving metadata from a peer, compare 'last_accessed' or 'stored_at' timestamps
-         // and only update if the incoming data is newer for a specific field,
-         // or if the state is 'deleted' (which overrides). This is complex!
-         // For this code, `array_merge` means the last call to this function wins if keys conflict.
+        // Update overall_file_status based on current chunk states
+        $this->metadata[$fileId]['overall_file_status'] = $this->getOverallFileStatus($fileId);
 
         $success = $this->save();
-         if (!$success) error_log("Failed to save metadata after updating $fileId/$chunkId");
-         return $success;
+        if (!$success) error_log("Failed to save metadata after updating $fileId/$chunkId");
+        return $success;
     }
 
     /**
@@ -141,6 +136,40 @@ class Metadata {
              return false;
          }
      }
+
+    /**
+     * Derives overall_file_status from chunk states.
+     * @param string $fileId
+     * @return string Status: 'active', 'archived', 'deleted', 'mixed', or 'unknown'
+     */
+    public function getOverallFileStatus(string $fileId): string {
+        $fileMeta = $this->getFileMetadata($fileId);
+        if (!$fileMeta || !isset($fileMeta['chunks'])) {
+            return 'unknown';
+        }
+
+        $chunks = $fileMeta['chunks'];
+        if (empty($chunks)) {
+            return 'unknown';
+        }
+
+        $states = array_column($chunks, 'state');
+
+        if (in_array('active', $states)) {
+            return 'active';
+        }
+        if (in_array('archived', $states)) {
+            return 'archived';
+        }
+        if (in_array('deleted', $states) && count(array_unique($states)) === 1) {
+            return 'deleted';
+        }
+        if (in_array('deleted', $states)) {
+            return 'mixed';
+        }
+
+        return 'unknown';
+    }
 
     /**
      * Merges incoming metadata from a peer into local metadata.
