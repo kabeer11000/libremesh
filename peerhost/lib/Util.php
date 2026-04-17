@@ -25,10 +25,23 @@ class Util {
         curl_setopt($ch, CURLOPT_MAXREDIRS, 5); // Prevent infinite redirects
 
         // Add authentication header
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        $headers = [
             get_config('API_KEY_NAME') . ': ' . get_config('NETWORK_SECRET'),
-            'Expect:', // Prevents Expect: 100-continue header issues
-        ]);
+            'Expect:',
+        ];
+
+        // Firewall bypass for hosts like InfinityFree that block non-browser requests
+        if (get_config('FIREWALL_BYPASS_ENABLED')) {
+            $bypassUserAgent = get_config('FIREWALL_BYPASS_USER_AGENT');
+            $headers[] = 'User-Agent: ' . $bypassUserAgent;
+            $headers[] = 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8';
+            $headers[] = 'Accept-Language: en-US,en;q=0.5';
+            $headers[] = 'Accept-Encoding: gzip, deflate, br';
+            $headers[] = 'Connection: keep-alive';
+            $headers[] = 'Upgrade-Insecure-Requests: 1';
+        }
+
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
         if ($method === 'POST') {
             curl_setopt($ch, CURLOPT_POST, true);

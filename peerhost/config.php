@@ -48,6 +48,10 @@ define('ARCHIVE_INTERVAL_HOURS', 24); // How often to run archiving (can be same
 // Security Settings
 define('API_KEY_NAME', 'X-Network-Secret'); // HTTP header name for the shared secret
 
+// Firewall Bypass Settings (for hosts like InfinityFree that block non-browser requests)
+define('FIREWALL_BYPASS_ENABLED', getenv_or('FIREWALL_BYPASS_ENABLED', false));
+define('FIREWALL_BYPASS_USER_AGENT', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+
 // PHP Environment/Capability Settings
 define('MIN_PHP_VERSION', '7.4.0'); // Minimum required PHP version
 define('REQUIRED_EXTENSIONS', ['json', 'curl']); // Extensions absolutely needed
