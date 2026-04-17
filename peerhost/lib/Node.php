@@ -447,16 +447,20 @@ class Node {
         }
 
 
-        // Select a few random peers to gossip with (excluding self)
+        // Select a few random peers to gossip with (excluding self, only healthy)
         $peersToContact = array_filter($knownPeers, function($peerUrl) use ($selfUrl) {
-            return $peerUrl !== $selfUrl;
+            if ($peerUrl === $selfUrl) {
+                return false;
+            }
+            $peerAnalytics = $this->analytics->getAll()['peer_status'][$peerUrl] ?? [];
+            return ($peerAnalytics['status'] ?? 'unknown') === 'ok' && ($peerAnalytics['capabilities']['can_initiate_http'] ?? false);
         });
 
-        // If no other peers, only add seeds to self if not present
-        if(empty($peersToContact)){
-             error_log("No other peers to contact. Ensuring seeds are in peer list.");
-             $this->peers->add(get_config('SEED_NODES')); // Add all seeds
-             return;
+        // If no healthy peers, only add seeds to self if not present
+        if (empty($peersToContact)) {
+            error_log("No healthy peers to gossip with. Ensuring seeds are in peer list.");
+            $this->peers->add(get_config('SEED_NODES'));
+            return;
         }
 
         // Pick a random subset of peers to contact (e.g., 3 random peers)
