@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git checkout *)",
+      "mcp__plugin_context7_context7__resolve-library-id",
+      "Bash(gh issue *)",
+      "Bash(gh label *)",
+      "mcp__plugin_context7_context7__query-docs",
+      "Bash(git config *)",
+      "Bash(echo \"feat\\(api\\): add new endpoint\")",
+      "Bash(bash .husky/commit-msg /tmp/test-commit)",
+      "Bash(echo \"bad commit message\")",
+      "Bash(bash .husky/commit-msg /tmp/test-commit2)",
+      "Bash(docker-compose up *)",
+      "Bash(docker search *)",
+      "Bash(docker-compose ps *)",
+      "Bash(docker-compose logs *)",
+      "Bash(docker build *)",
+      "Bash(docker images *)",
+      "Bash(curl -s http://localhost:8001/api/capabilities.php)",
+      "Bash(curl -s http://localhost:8001/api/peers.php)",
+      "Bash(curl *)",
+      "Bash(docker exec *)",
+      "Bash(docker exec libremesh-node1 *)",
+      "Bash(cmd.exe *)",
+      "Bash(docker-compose down *)",
+      "Bash(chmod +x tests/test_cron.sh)",
+      "Bash(bash tests/test_cron.sh http://localhost:8001)"
+    ]
+  }
+}

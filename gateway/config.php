@@ -1,17 +1,19 @@
 <?php
 // gateway/config.php - Configuration for the Download Gateway
+// Supports environment variables for Docker/Kubernetes deployment
+
+function getenv_or($key, $default) {
+    $val = getenv($key);
+    return $val !== false && $val !== '' ? $val : $default;
+}
 
 // !!! IMPORTANT: Initial list of known nodes in the network !!!
-// The gateway uses this list to start discovering and checking node status.
-// Include the URL of at least one deployed LibreMesh node. Add others as they join.
-define('GATEWAY_SEED_NODES', [
-    'https://your-first-node-url.com/libremesh/',
-    // Add URLs of other LibreMesh nodes here
-]);
+$seed_env = getenv_or('GATEWAY_SEED_NODES', '');
+$default_seeds = ['http://localhost:8001/', 'http://localhost:8002/'];
+define('GATEWAY_SEED_NODES', $seed_env ? json_decode($seed_env, true) : $default_seeds);
 
 // !!! IMPORTANT: The NETWORK_SECRET used by your LibreMesh nodes !!!
-// The gateway needs this to query the nodes' analytics API.
-define('GATEWAY_NETWORK_SECRET', 'YOUR_VERY_LONG_AND_RANDOM_SHARED_SECRET_HERE'); // Must match NETWORK_SECRET in node's config.php
+define('GATEWAY_NETWORK_SECRET', getenv_or('GATEWAY_NETWORK_SECRET', 'test-secret'));
 
 // Data Storage Paths for the Gateway
 define('GATEWAY_DATA_PATH', __DIR__ . '/data/');

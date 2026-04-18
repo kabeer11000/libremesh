@@ -3,6 +3,65 @@
 
 class GatewayUtil {
 
+    /**
+     * Read and JSON-decode a file with flock protection.
+     * @param string $filePath
+     * @return array|null
+     */
+    public static function readJsonFile($filePath) {
+        if (!file_exists($filePath)) {
+            return null;
+        }
+        $handle = fopen($filePath, 'r');
+        if ($handle === false) {
+            return null;
+        }
+        if (flock($handle, LOCK_SH)) {
+            $content = file_get_contents($filePath);
+            flock($handle, LOCK_UN);
+            fclose($handle);
+            if ($content === false) {
+                return null;
+            }
+            $decoded = json_decode($content, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return null;
+            }
+            return $decoded;
+        }
+        fclose($handle);
+        return null;
+    }
+
+    /**
+     * Write JSON to file with flock protection.
+     * @param string $filePath
+     * @param array $data
+     * @return bool
+     */
+    public static function writeJsonFile($filePath, $data) {
+        $handle = fopen($filePath, 'c+');
+        if ($handle === false) {
+            return false;
+        }
+        if (flock($handle, LOCK_EX)) {
+            ftruncate($handle, 0);
+            $json = json_encode($data, JSON_PRETTY_PRINT);
+            if ($json === false) {
+                flock($handle, LOCK_UN);
+                fclose($handle);
+                return false;
+            }
+            $result = fwrite($handle, $json);
+            fflush($handle);
+            flock($handle, LOCK_UN);
+            fclose($handle);
+            return $result !== false;
+        }
+        fclose($handle);
+        return false;
+    }
+
      /**
      * Makes an authenticated HTTP request to a node API endpoint.
      * @param string $url The URL to request (should include /api/...).

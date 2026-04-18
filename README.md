@@ -1,4 +1,8 @@
 # LibreMesh
+
+[![CI](https://github.com/imossaidqadri/libremesh/actions/workflows/ci.yml/badge.svg)](https://github.com/imossaidqadri/libremesh/actions/workflows/ci.yml)
+[![Docker](https://img.shields.io/badge/docker-ghcr.io-blue)](https://github.com/imossaidqadri/libremesh/pkgs/container/libremesh)
+
 Decentralized File Storage on Shared Hosting (Proof of Concept)
 
 LibreMesh is a proof-of-concept implementation for a decentralized file storage system designed to be easily deployed on standard shared hosting environments using PHP. It aims to provide a distributed way to store files with redundancy, leveraging common web hosting features like HTTP and cron jobs, while accounting for the variability in PHP environments.

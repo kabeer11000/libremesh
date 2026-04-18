@@ -58,17 +58,12 @@ class Metadata {
         // Merge the provided data into the existing metadata for this chunk
         $this->metadata[$fileId]['chunks'][$chunkId] = array_merge($this->metadata[$fileId]['chunks'][$chunkId], $data);
 
-         // --- Simplified Conflict Resolution ---
-         // If merging metadata during gossip, more complex logic is needed here
-         // to handle cases where two nodes have conflicting states or timestamps.
-         // Example: If receiving metadata from a peer, compare 'last_accessed' or 'stored_at' timestamps
-         // and only update if the incoming data is newer for a specific field,
-         // or if the state is 'deleted' (which overrides). This is complex!
-         // For this code, `array_merge` means the last call to this function wins if keys conflict.
+        // Update overall_file_status based on current chunk states
+        $this->metadata[$fileId]['overall_file_status'] = $this->getOverallFileStatus($fileId);
 
         $success = $this->save();
-         if (!$success) error_log("Failed to save metadata after updating $fileId/$chunkId");
-         return $success;
+        if (!$success) error_log("Failed to save metadata after updating $fileId/$chunkId");
+        return $success;
     }
 
     /**
@@ -81,11 +76,12 @@ class Metadata {
 
         if (isset($this->metadata[$fileId])) {
             $deleteTime = time();
-            foreach ($this->metadata[$fileId]['chunks'] ?? [] as $chunkId => &$chunkData) {
+            $chunks = &$this->metadata[$fileId]['chunks'];
+            foreach ($chunks as $chunkId => &$chunkData) {
                 $chunkData['state'] = 'deleted';
                 $chunkData['deleted_at'] = $deleteTime;
             }
-             unset($chunkData); // Unset reference
+            unset($chunkData);
 
             $success = $this->save();
              if (!$success) error_log("Failed to save metadata after marking $fileId deleted.");
@@ -140,6 +136,115 @@ class Metadata {
              return false;
          }
      }
+
+    /**
+     * Derives overall_file_status from chunk states.
+     * @param string $fileId
+     * @return string Status: 'active', 'archived', 'deleted', 'mixed', or 'unknown'
+     */
+    public function getOverallFileStatus(string $fileId): string {
+        $fileMeta = $this->getFileMetadata($fileId);
+        if (!$fileMeta || !isset($fileMeta['chunks'])) {
+            return 'unknown';
+        }
+
+        $chunks = $fileMeta['chunks'];
+        if (empty($chunks)) {
+            return 'unknown';
+        }
+
+        $states = array_column($chunks, 'state');
+
+        if (in_array('active', $states)) {
+            return 'active';
+        }
+        if (in_array('archived', $states)) {
+            return 'archived';
+        }
+        if (in_array('deleted', $states) && count(array_unique($states)) === 1) {
+            return 'deleted';
+        }
+        if (in_array('deleted', $states)) {
+            return 'mixed';
+        }
+
+        return 'unknown';
+    }
+
+    /**
+     * Merges incoming metadata from a peer into local metadata.
+     * Uses timestamp-based conflict resolution: newer data wins,
+     * and 'deleted' state takes precedence over other states.
+     * @param array $incomingMetadata Metadata array from peer.
+     * @return int Number of entries updated.
+     */
+    public function mergeIncomingMetadata(array $incomingMetadata) {
+        $this->load();
+        $updatedCount = 0;
+
+        foreach ($incomingMetadata as $fileId => $fileMetadata) {
+            if (!isset($this->metadata[$fileId])) {
+                $this->metadata[$fileId] = $fileMetadata;
+                $updatedCount++;
+                continue;
+            }
+
+            foreach ($fileMetadata['chunks'] ?? [] as $chunkId => $chunkData) {
+                if (!isset($this->metadata[$fileId]['chunks'][$chunkId])) {
+                    $this->metadata[$fileId]['chunks'][$chunkId] = $chunkData;
+                    $updatedCount++;
+                } else {
+                    $localChunk = &$this->metadata[$fileId]['chunks'][$chunkId];
+                    $updated = false;
+
+                    if (($chunkData['state'] ?? 'active') === 'deleted') {
+                        if (($localChunk['state'] ?? 'active') !== 'deleted') {
+                            $localChunk['state'] = 'deleted';
+                            $localChunk['deleted_at'] = $chunkData['deleted_at'] ?? time();
+                            $updated = true;
+                        }
+                        if (isset($chunkData['deleted_at']) && isset($localChunk['deleted_at'])) {
+                            if ($chunkData['deleted_at'] < $localChunk['deleted_at']) {
+                                $localChunk['deleted_at'] = $chunkData['deleted_at'];
+                            }
+                        }
+                    } else {
+                        $incomingTime = $chunkData['stored_at'] ?? $chunkData['last_accessed'] ?? 0;
+                        $localTime = $localChunk['stored_at'] ?? $localChunk['last_accessed'] ?? 0;
+
+                        if ($incomingTime > $localTime) {
+                            if (isset($chunkData['local_path'])) {
+                                $localChunk['local_path'] = $chunkData['local_path'];
+                            }
+                            if (isset($chunkData['archive_path'])) {
+                                $localChunk['archive_path'] = $chunkData['archive_path'];
+                            }
+                            if (isset($chunkData['archive_entry_name'])) {
+                                $localChunk['archive_entry_name'] = $chunkData['archive_entry_name'];
+                            }
+                            if (isset($chunkData['state']) && $chunkData['state'] !== 'deleted') {
+                                $localChunk['state'] = $chunkData['state'];
+                            }
+                            if (isset($chunkData['last_accessed'])) {
+                                $localChunk['last_accessed'] = $chunkData['last_accessed'];
+                            }
+                            $updated = true;
+                        }
+                    }
+
+                    if ($updated) {
+                        $updatedCount++;
+                    }
+                }
+            }
+        }
+
+        if ($updatedCount > 0) {
+            $this->save();
+        }
+
+        return $updatedCount;
+    }
 
      // TODO: Method to remove a chunk's metadata completely (used after physical deletion)
      // public function removeChunkMetadata($fileId, $chunkId) { ... }

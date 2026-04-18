@@ -2,9 +2,8 @@
 // process_upload.php - Receives file from HTML form and sends to a LibreMesh node API
 
 // --- Configuration ---
-// !!! IMPORTANT: Replace with the URL of a reachable LibreMesh node's upload API !!!
-// This client only needs to know about *one* node to upload the file.
-define('TARGET_NODE_UPLOAD_API', 'https://libremesh-mesh0-root.infy.uk/api/upload.php');
+// Target node API URL (use internal Docker network URL for container-to-container)
+define('TARGET_NODE_UPLOAD_API', getenv('TARGET_NODE_UPLOAD_API') ?: 'http://node1.libremesh.local/libremesh/api/upload.php');
 
 // --- Error Handling ---
 ini_set('display_errors', 1);
@@ -80,17 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file_upload'])) {
              echo '<div class="message error">cURL PHP extension is not available on this client server. Cannot send file.</div>';
         } else {
 
-            $cfile = null;
-            // Use CURLFile for modern PHP (>= 5.5) - Recommended
-            if (class_exists('CURLFile')) {
-                $cfile = new CURLFile($tempFilePath, $file['type'], $originalFileName);
-            } else {
-                 // Fallback for older PHP - @ syntax (deprecated)
-                 $cfile = '@' . $tempFilePath;
-                 // Warning: This might require CURL_MIMEPOST in some older cURL versions or may not set Content-Type correctly.
-                 echo '<div class="message info">Using deprecated @ syntax for cURL file upload. Consider upgrading PHP.</div>';
-            }
-
+            $cfile = new CURLFile($tempFilePath, $file['type'], $originalFileName);
 
             if ($cfile) {
                 $postData = array(

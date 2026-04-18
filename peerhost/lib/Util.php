@@ -25,34 +25,39 @@ class Util {
         curl_setopt($ch, CURLOPT_MAXREDIRS, 5); // Prevent infinite redirects
 
         // Add authentication header
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        $headers = [
             get_config('API_KEY_NAME') . ': ' . get_config('NETWORK_SECRET'),
-            'Expect:', // Prevents Expect: 100-continue header issues
-        ]);
+            'Expect:',
+        ];
+
+        // Firewall bypass for hosts like InfinityFree that block non-browser requests
+        if (get_config('FIREWALL_BYPASS_ENABLED')) {
+            $bypassUserAgent = get_config('FIREWALL_BYPASS_USER_AGENT');
+            $headers[] = 'User-Agent: ' . $bypassUserAgent;
+            $headers[] = 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8';
+            $headers[] = 'Accept-Language: en-US,en;q=0.5';
+            $headers[] = 'Accept-Encoding: gzip, deflate, br';
+            $headers[] = 'Connection: keep-alive';
+            $headers[] = 'Upgrade-Insecure-Requests: 1';
+        }
+
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
         if ($method === 'POST') {
             curl_setopt($ch, CURLOPT_POST, true);
             if (is_array($data)) {
-                 // Check for file uploads specifically
                  $is_multipart = false;
                  foreach ($data as $key => $value) {
-                     if (is_string($value) && strpos($value, '@') === 0 && file_exists(substr($value, 1))) {
-                         // Using deprecated '@' syntax, might need CurlFile for modern PHP/cURL
-                         error_log("Warning: Using deprecated '@' syntax for cURL file upload. Consider CurlFile.");
-                         $is_multipart = true; // Using @ implies multipart/form-data
-                     } elseif ($value instanceof CURLFile) {
+                     if ($value instanceof CURLFile) {
                          $is_multipart = true;
                          break;
                      }
                  }
 
                  if ($is_multipart) {
-                      // Let cURL set Content-Type for multipart
                       curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
                  } else {
-                      // Assume JSON or form-urlencoded
-                      curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data)); // Default to form-urlencoded
-                      // If sending JSON: curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data)); curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json', get_config('API_KEY_NAME') . ': ' . get_config('NETWORK_SECRET')]);
+                      curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
                  }
 
             } else {

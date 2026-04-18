@@ -1,24 +1,25 @@
 <?php
 // config.php
+// Environment variables for Docker (with defaults for local development)
+
+function getenv_or($key, $default) {
+    $val = getenv($key);
+    return $val !== false && $val !== '' ? $val : $default;
+}
+
 // !!! IMPORTANT: Replace with a unique, random string for YOUR network !!!
-// This acts as a shared secret for node-to-node communication authentication.
-define('NETWORK_SECRET', 'YOUR_VERY_LONG_AND_RANDOM_SHARED_SECRET_HERE');
+define('NETWORK_SECRET', getenv_or('NETWORK_SECRET', 'test-secret'));
 
 // !!! IMPORTANT: Replace with a unique ID for THIS SPECIFIC NODE !!!
-// This helps identify this node in the network. Could be a UUID or hostname.
-define('NODE_ID', 'node_freeweb10-2.byetcluster.com_682976f6a7a2c'); // Simple example ID
+define('NODE_ID', getenv_or('NODE_ID', 'node-' . uniqid()));
 
 // !!! IMPORTANT: Replace with the accessible URL for THIS NODE's root directory !!!
-// Other nodes will use this URL to communicate with this node.
-define('NODE_URL', 'https://libremesh-mesh0-root.infy.uk/'); // Example URL
+define('NODE_URL', getenv_or('NODE_URL', 'http://localhost/'));
 
 // !!! IMPORTANT: Initial list of known nodes in the network !!!
-// New nodes use this list to discover the rest of the network via gossip.
-// Include your own NODE_URL here once deployed. Add other nodes' URLs as they join.
-define('SEED_NODES', [
-    'https://libremesh-mesh0-root.infy.uk/',
-    // Add URLs of other nodes here
-]);
+$seed_env = getenv_or('SEED_NODES', '');
+$default_seeds = ['http://localhost:8001/', 'http://localhost:8002/'];
+define('SEED_NODES', $seed_env ? json_decode($seed_env, true) : $default_seeds);
 
 // Data Storage Paths
 // Make sure these directories exist and are writable by your web server user.
@@ -46,6 +47,10 @@ define('ARCHIVE_INTERVAL_HOURS', 24); // How often to run archiving (can be same
 
 // Security Settings
 define('API_KEY_NAME', 'X-Network-Secret'); // HTTP header name for the shared secret
+
+// Firewall Bypass Settings (for hosts like InfinityFree that block non-browser requests)
+define('FIREWALL_BYPASS_ENABLED', getenv_or('FIREWALL_BYPASS_ENABLED', false));
+define('FIREWALL_BYPASS_USER_AGENT', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
 
 // PHP Environment/Capability Settings
 define('MIN_PHP_VERSION', '7.4.0'); // Minimum required PHP version

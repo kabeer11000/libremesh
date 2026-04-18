@@ -62,6 +62,10 @@ class Node {
          return $this->metadata->markFileDeleted($fileId);
      }
 
+     public function mergeIncomingMetadata(array $incomingMetadata) {
+         return $this->metadata->mergeIncomingMetadata($incomingMetadata);
+     }
+
     public function getAnalytics() {
         return $this->analytics->getAll();
     }
@@ -239,29 +243,44 @@ class Node {
          error_log("Replicating file $fileId to " . count($peersToReplicate) . " peers.");
 
          $replicationStatus = [];
+         $maxRetries = 3;
+         $baseDelay = 1;
+
          foreach ($peersToReplicate as $peerUrl) {
-             // Send the original uploaded file content to the peer
-             // Using CURLFile is the modern way for multipart uploads
-             $cfile = new CURLFile($this->storage->buildDataPath($fileId, $chunkId), mime_content_type($this->storage->buildDataPath($fileId, $chunkId)), basename($this->storage->buildDataPath($fileId, $chunkId)));
+             $attempt = 0;
+             $success = false;
 
-             $postData = [
-                 'file_data' => $cfile, // The file itself
-                 'file_id' => $fileId,
-                 'chunk_id' => $chunkId,
-                 'checksum' => $checksum,
-                 'source_node_id' => get_config('NODE_ID'),
-                 // Add API_KEY_NAME header via curl_setopt
-             ];
+             while ($attempt < $maxRetries && !$success) {
+                 if ($attempt > 0) {
+                     $delay = $baseDelay * pow(2, $attempt - 1);
+                     error_log("Retry $attempt for $fileId to $peerUrl after {$delay}s");
+                     sleep($delay);
+                 }
 
-             $response = Util::requestPeer($peerUrl . 'api/upload_chunk.php', 'POST', $postData);
+                 // Send the original uploaded file content to the peer
+                 $cfile = new CURLFile($this->storage->buildDataPath($fileId, $chunkId), mime_content_type($this->storage->buildDataPath($fileId, $chunkId)), basename($this->storage->buildDataPath($fileId, $chunkId)));
 
-             if ($response !== false && isset($response['success']) && $response['success']) {
-                 $replicationStatus[$peerUrl] = 'success';
-                 error_log("Replication of $fileId to $peerUrl successful.");
-             } else {
-                 $replicationStatus[$peerUrl] = 'failed';
-                 error_log("Replication of $fileId to $peerUrl failed. Response: " . print_r($response, true));
-                 // TODO: Mark this replication as needed in analytics or metadata for healing later
+                 $postData = [
+                     'file_data' => $cfile,
+                     'file_id' => $fileId,
+                     'chunk_id' => $chunkId,
+                     'checksum' => $checksum,
+                     'source_node_id' => get_config('NODE_ID'),
+                 ];
+
+                 $response = Util::requestPeer($peerUrl . 'api/upload_chunk.php', 'POST', $postData);
+
+                 if ($response !== false && isset($response['success']) && $response['success']) {
+                     $success = true;
+                     $replicationStatus[$peerUrl] = 'success';
+                     error_log("Replication of $fileId to $peerUrl successful.");
+                 } else {
+                     $attempt++;
+                     if ($attempt >= $maxRetries) {
+                         $replicationStatus[$peerUrl] = 'failed';
+                         error_log("Replication of $fileId to $peerUrl failed after $maxRetries attempts. Response: " . print_r($response, true));
+                     }
+                 }
              }
          }
 
@@ -417,7 +436,7 @@ class Node {
 
         if (empty($knownPeers)) {
              error_log("No known peers, starting with seeds.");
-             $knownPeers = get_config('SEED_NODERS'); // Start with seed nodes if peer list is empty
+             $knownPeers = get_config('SEED_NODES'); // Start with seed nodes if peer list is empty
         }
 
 
@@ -428,16 +447,20 @@ class Node {
         }
 
 
-        // Select a few random peers to gossip with (excluding self)
+        // Select a few random peers to gossip with (excluding self, only healthy)
         $peersToContact = array_filter($knownPeers, function($peerUrl) use ($selfUrl) {
-            return $peerUrl !== $selfUrl;
+            if ($peerUrl === $selfUrl) {
+                return false;
+            }
+            $peerAnalytics = $this->analytics->getAll()['peer_status'][$peerUrl] ?? [];
+            return ($peerAnalytics['status'] ?? 'unknown') === 'ok' && ($peerAnalytics['capabilities']['can_initiate_http'] ?? false);
         });
 
-        // If no other peers, only add seeds to self if not present
-        if(empty($peersToContact)){
-             error_log("No other peers to contact. Ensuring seeds are in peer list.");
-             $this->peers->add(get_config('SEED_NODES')); // Add all seeds
-             return;
+        // If no healthy peers, only add seeds to self if not present
+        if (empty($peersToContact)) {
+            error_log("No healthy peers to gossip with. Ensuring seeds are in peer list.");
+            $this->peers->add(get_config('SEED_NODES'));
+            return;
         }
 
         // Pick a random subset of peers to contact (e.g., 3 random peers)

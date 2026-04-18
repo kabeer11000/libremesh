@@ -28,7 +28,7 @@ foreach ($knownNodes as $nodeUrl => $statusData) {
 
     // Query the node's analytics API for its overall status and peer health view
     // This endpoint requires the NETWORK_SECRET
-    $analyticsUrl = $nodeUrl . 'api/analytics.php?type=all'; // Or type=status and type=peer_health separately
+    $analyticsUrl = rtrim($nodeUrl, '/') . '/libremesh/api/analytics.php?type=all';
     $response = GatewayUtil::requestNode($analyticsUrl, 'GET');
 
     $status = 'offline'; // Assume offline if request fails
